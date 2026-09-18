@@ -16,19 +16,60 @@
   "frame_convention": {
     "equation": "p_camera = T_camera_lidar * p_lidar",
     "from": "livox_frame",
-    "to": "camera_color_optical_frame"
+    "to": "camera_color_optical_frame",
+    "note": "to=camera_color_optical_frame holds only after the depth->color composition recorded in extrinsic_chain; the raw alignment output is in camera_depth_optical_frame."
   },
-  "method": "scene06-scene10 normal-aware dense RGB-D to LiDAR alignment",
+  "method": "scene06-scene10 normal-aware dense RGB-D to LiDAR alignment (solved in depth/IR1 optical frame), composed with the factory IR1->RGB extrinsic to reach camera_color_optical_frame",
   "method_metadata": {
     "data_policy": "Five static paired clouds (scene06 through scene10) all participate in this operational fit.",
     "acceptance_tier": "LOCAL is active for the recorded device and mount; VALIDATED is the independent acceptance tier.",
     "optimizer": "18 mm voxel, normal-aware symmetric GICP, equal scene leverage",
-    "status_note": "LOCAL operational calibration bound to this mounted rig and its recorded device identities."
+    "status_note": "LOCAL operational calibration bound to this mounted rig and its recorded device identities.",
+    "frame_chain": "GICP aligns the MID-360S cloud against the D435i depth cloud, which the capture manifests declare as d435_depth_optical_frame (left IR geometry). The solved pose is therefore T_depth_lidar; T_camera_lidar = T_ir1_to_rgb @ T_depth_lidar."
   },
   "mount_session_id": "a56af70a-da0b-49d2-bc84-540c37cb3b05",
   "next_step": "Loaded automatically by the fused point-cloud viewer for this rig; use --extrinsic to select another rig's transform.",
   "result": {
     "T_camera_lidar": [
+      [
+        0.9997600574093007,
+        -0.01989489522683631,
+        -0.009166415680117005,
+        0.030979268128811275
+      ],
+      [
+        -0.0038796328879411794,
+        0.25102603484721775,
+        -0.9679725424003092,
+        -0.0825849463820706
+      ],
+      [
+        0.021558721904112715,
+        0.9677758709864368,
+        0.25088862436615234,
+        -0.04336321888108331
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "geometry_alignment_inlier_median_mm": 10.018649066372436,
+    "geometry_alignment_inlier_p90_mm": 16.873144671833998,
+    "independent_holdout_available": false,
+    "multi_seed_convergence_rotation_deg": 0.007197157860239566,
+    "multi_seed_convergence_translation_mm": 0.12028129967133158,
+    "pose_count": 5,
+    "scene_forward_nn_median_mm": {
+      "scene06": 12.505316578522413,
+      "scene07": 13.68577990492146,
+      "scene08": 11.88331553310594,
+      "scene09": 11.035358383928124,
+      "scene10": 11.699297922555976
+    },
+    "T_depth_lidar_raw_alignment": [
       [
         0.9997396602879078,
         -0.022703607212747123,
@@ -53,20 +94,7 @@
         0.0,
         1.0
       ]
-    ],
-    "geometry_alignment_inlier_median_mm": 10.018649066372436,
-    "geometry_alignment_inlier_p90_mm": 16.873144671833998,
-    "independent_holdout_available": false,
-    "multi_seed_convergence_rotation_deg": 0.007197157860239566,
-    "multi_seed_convergence_translation_mm": 0.12028129967133158,
-    "pose_count": 5,
-    "scene_forward_nn_median_mm": {
-      "scene06": 12.505316578522413,
-      "scene07": 13.68577990492146,
-      "scene08": 11.88331553310594,
-      "scene09": 11.035358383928124,
-      "scene10": 11.699297922555976
-    }
+    ]
   },
   "rig_id": "mid360s-d435i-01",
   "schema_version": 1,
@@ -105,10 +133,55 @@
     "scope": "bound to the recorded device and mount session",
     "multi_seed_convergence": "0.00720 deg / 0.120 mm",
     "translation_lidar_to_camera_m": [
-      0.01680475337608131,
-      -0.08230464690804087,
-      -0.043713326821871804
-    ]
+      0.030979268128811275,
+      -0.0825849463820706,
+      -0.04336321888108331
+    ],
+    "frame_chain": "T_ir1_to_rgb @ T_depth_lidar (depth->color composed 2026-09-18)"
   },
-  "task_id": "mid360s_d435i_ext"
+  "task_id": "mid360s_d435i_ext",
+  "extrinsic_chain": {
+    "corrected_utc": "2026-09-18T00:00:00Z",
+    "defect": "The GICP fit was recorded as camera_color_optical_frame although every capture manifest declares frames.rgbd = d435_depth_optical_frame and the depth cloud is back-projected with the depth/IR1 intrinsics. The depth->color extrinsic was never composed.",
+    "composition": "T_camera_lidar = T_ir1_to_rgb @ T_depth_lidar",
+    "T_ir1_to_rgb": {
+      "source_file": "results/factory_params.json",
+      "source_key": "T_ir1_to_rgb",
+      "source_api_call": "ir1.get_extrinsics_to(color)",
+      "equation": "p_color = R_row_major @ p_depth + t",
+      "rotation_storage": "librealsense rs2_extrinsics.rotation is column-major; factory_params.json stores three consecutive columns, so the row-major matrix is the transpose",
+      "rotation_row_major": [
+        [
+          0.9999722838401794,
+          0.007378990296274424,
+          0.0009922082535922527
+        ],
+        [
+          -0.007379462942481041,
+          0.9999726414680481,
+          0.00047371455002576113
+        ],
+        [
+          -0.0009886855259537697,
+          -0.00048102339496836066,
+          0.9999994039535522
+        ]
+      ],
+      "translation_m": [
+        0.014825678430497646,
+        -0.00013783351460006088,
+        0.00032710604136809707
+      ]
+    },
+    "translation_correction_mm": [
+      14.174514752729964,
+      -0.2802994740297299,
+      0.35010794078849106
+    ],
+    "translation_correction_norm_mm": 14.181608224764352,
+    "rotation_correction_deg": 0.42750099507715533,
+    "previous_file_sha256": "80f67989aa3db74f507cec079118b1cf335063008ab2772055f295a5f8ea6868",
+    "backup": "results/mid360s_d435i_extrinsic.local.json.bak_pre_depth2color_20260918",
+    "alignment_metrics_unaffected": "The GICP residual statistics are distances between corresponding points and are invariant under the rigid depth->color composition, so result.geometry_alignment_* and scene_forward_nn_median_mm remain valid."
+  }
 }

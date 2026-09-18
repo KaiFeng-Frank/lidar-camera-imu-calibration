@@ -157,6 +157,20 @@ runtime applies only parameters that passed observability, repeatability, and
 holdout checks; detailed controlled studies and deployment decisions are
 preserved in [CALIBRATION.md](CALIBRATION.md).
 
+## Downstream check: FAST-LIVO2 real-time mapping
+
+![FAST-LIVO2 mapping with this repo's calibration, rendered from the live recording](results/fastlivo2_mapping_mid360s_d435i.gif)
+
+The extrinsics, time offset and intrinsics published here were consumed **unchanged** by
+[FAST-LIVO2](https://github.com/hku-mars/FAST-LIVO2) on the same mounted rig (2026-09-19):
+`T_camera_lidar` → `Rcl/Pcl`, `T_lidar_imu` → `extrinsic_T/R`, the LiDAR→depth time offset
+inverted to `img_time_offset = +5.989 ms`, and the factory 1280×720 RGB intrinsics.
+A 103 s hand-held loop (27.0 m path, ~2×3 m room) stayed within 2.1 m of its start, with a median
+LIO inlier ratio of 86 % and median point-to-plane residual of 0.019 m. Three offline replays of the
+same recording (1×, 3×, and 1× with rviz + recording running) reproduced the trajectory to within 0.15 m.
+Evidence and every consumed field: [`results/fastlivo2_downstream_validation.json`](results/fastlivo2_downstream_validation.json).
+This is a functional check on the recorded rig and mount session, not an independent accuracy tier.
+
 ## Engineering notes
 
 Fifteen+ field-tested implementation notes are preserved in

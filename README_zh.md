@@ -143,6 +143,18 @@ MID-360S IMU 结果还固结 gyro bias
 重复性与 holdout 验收的参数；完整对照实验与部署决策收录于
 [CALIBRATION.md](CALIBRATION.md)。
 
+## 下游验证：FAST-LIVO2 实时建图
+
+![用本仓库标定结果跑 FAST-LIVO2，由实时录制渲染](results/fastlivo2_mapping_mid360s_d435i.gif)
+
+本仓库发布的外参、时间偏移和内参**原样**喂给了 [FAST-LIVO2](https://github.com/hku-mars/FAST-LIVO2)，
+同一套 rig、同一次安装（2026-09-19）：`T_camera_lidar` → `Rcl/Pcl`，`T_lidar_imu` → `extrinsic_T/R`，
+雷达→深度时间偏移取反得到 `img_time_offset = +5.989 ms`，相机用出厂 1280×720 RGB 内参。
+103 s 手持绕行（路径 27.0 m，约 2×3 m 房间）全程离起点不超过 2.1 m，LIO 内点比例中位 86 %，
+点到面残差中位 0.019 m。同一份录制离线回放三次（1×、3×、1× 并开 rviz + 同时录包），轨迹一致到 0.15 m 以内。
+证据与每个被消费的字段见 [`results/fastlivo2_downstream_validation.json`](results/fastlivo2_downstream_validation.json)。
+这是同一 rig / 同一安装会话上的功能性验证，不构成独立的精度层级。
+
 ## 工程实践
 
 15+ 条实测工程记录收录于 [CALIBRATION.md](CALIBRATION.md)，

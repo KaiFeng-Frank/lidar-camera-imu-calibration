@@ -46,6 +46,34 @@ pending/rework，也不属于版本迭代。
 
 ---
 
+## 下游验证 — FAST-LIVO2 实时建图（2026-09-19）✅
+
+标定结果第一次被一个不属于本仓库的算法**原样**消费。FAST-LIVO2（`hku-mars/FAST-LIVO2@0d2c034`，ROS 1 noetic 容器）
+的配置由脚本从 `results/*.json` 生成，没有手抄数字：
+
+| FAST-LIVO2 参数 | 来源 | 说明 |
+|---|---|---|
+| `extrin_calib/Rcl, Pcl` | `mid360s_d435i_extrinsic.local.json` → `T_camera_lidar` | 代码里 `Rci = Rcl·Rli`，即 Rcl/Pcl 就是 T_camera_lidar，同向直接用 |
+| `extrin_calib/extrinsic_T, R` | `mid360s_lidar_imu.json` → `T_lidar_imu` | (0.011, 0.02329, −0.04412) m，R = I |
+| `time_offset/img_time_offset` | `mid360s_d435i_timesync.json` → `time_offset_lidar_to_d435_depth_ms` | 代码 `t = stamp + off`，标定约定 `t_depth = t_lidar + off`，取反得 **+5.989 ms**；标定的是深度流，彩色流可能再差几 ms |
+| 相机内参 | `factory_params.json` → `rgb_1280x720` | 必须用 1280×720，640×480 是裁剪不是缩放 |
+
+**结果**（同一 bag，`sha256 22c204e5…`，105 s，三路零丢帧零乱序）：
+
+| 回放条件 | effective 中位 / 最低 | residual 中位 | 终点距起点 | 离起点最远 |
+|---|---|---|---|---|
+| 1× | 86.4 % / 33.3 % | 0.019 m | 1.45 m | 1.99 m |
+| 3× | 86.6 % / 38.4 % | 0.019 m | 1.45 m | 2.11 m |
+| 1× + rviz 软件渲染 + 同时录包 | 86.2 % / 40.4 % | 0.019 m | 1.47 m | 2.14 m |
+
+三条轨迹一致到 0.15 m 以内：算法对该输入是确定的，算力余量 ≥ 3×。GIF：`results/fastlivo2_mapping_mid360s_d435i.gif`；
+全部字段与判据：`results/fastlivo2_downstream_validation.json`。
+
+**实时踩到、离线无法复现的三种发散**（都不是标定问题）：玻璃/窗户的多回波几何矛盾（用只保留第 0 回波缓解，
+玻璃场景 effective 0.7 % → 45 %）；设备放下后所有点挤在 2 m 内的退化（不可恢复，FAST-LIVO2 无重定位）；
+IMU 初始化窗口 0.15 s 太短、运动中估歪重力导致位置二次发散（改为 2 s）。
+教训：**录包要一直录到放下之后**，失败瞬间才是最有价值的数据。
+
 ## 阶段 1 — RGB 相机内参 ✅
 
 `data/cam_rgb-camchain.yaml`(Kalibr 格式,可直接被 VINS / ORB-SLAM 等消费)
