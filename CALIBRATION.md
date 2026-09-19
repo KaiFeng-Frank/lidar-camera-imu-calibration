@@ -74,6 +74,35 @@ pending/rework，也不属于版本迭代。
 IMU 初始化窗口 0.15 s 太短、运动中估歪重力导致位置二次发散（改为 2 s）。
 教训：**录包要一直录到放下之后**，失败瞬间才是最有价值的数据。
 
+## 下游验证 2 — Coco-LIC 同一份录制（2026-09-19）✅
+
+第二个消费者换成结构完全不同的算法：Coco-LIC（连续时间 B 样条 LICO，`APRIL-ZJU/Coco-LIC`，经 `KaiFeng-Frank/Coco-LIC-ROS2-Jazzy` 运行），
+输入是同一份 bag（`sha256 22c204e5…`）转成的 rosbag2。标定字段的映射：
+
+| Coco-LIC 参数 | 来源 | 说明 |
+|---|---|---|
+| `camera.yaml: CameraExtrinsics` | `T_camera_lidar · T_lidar_imu` | Coco-LIC 直接要相机→IMU，两个发布矩阵复合，平移 (0.0419, −0.0341, −0.0317) m |
+| `lidar.yaml: lidar0/Extrinsics` | `mid360s_lidar_imu.json` → `T_lidar_imu` | 与 FAST-LIVO2 相同 |
+| `camera.yaml: img_time_offset` | `mid360s_d435i_timesync.json` | 同一约定、同一个数 **+5.989 ms** |
+| 相机内参 / 尺寸 | `factory_params.json` → `rgb_1280x720` | `image_width/height` 必须写 1280×720，见下面的坑 |
+
+**结果**（与 FAST-LIVO2 的 1× 回放轨迹按时间关联 1370/1376 对，只对齐 yaw+平移；没有真值，是互证不是精度）：
+
+| 运行 | 终点距起点 | 路径长 | 对 FAST-LIVO2 RMSE / 中位 / 最大 |
+|---|---|---|---|
+| FAST-LIVO2（基线） | 1.46 m | 26.97 m | — |
+| Coco-LIC LICO，同配置两次 | 1.45 / 1.48 m | 22.7 / 23.0 m | 0.154 / 0.179 m · 0.09 / 0.10 m · 0.76 / 0.90 m |
+| Coco-LIC LIO-only | 1.45 m | 22.5 m | 0.135 m · 0.07 m · 0.65 m |
+
+分段看，90 % 的时间两者差 5–10 cm，最大值每次都在 70–80 s 靠窗的一段，是谁偏了说不清。Coco-LIC 多线程、同配置两次差 0.025 m，
+3 cm 以内的差别是噪声。路径长短 15 % 是 FAST-LIVO2 离散位姿的抖动（单步最大 123 mm 对 15 mm）。
+GIF：`results/cocolic_mapping_mid360s_d435i.gif`（与 FAST-LIVO2 的 GIF 同一视角）；全部字段：`results/cocolic_downstream_validation.json`。
+
+**这次验证暴露的坑（与标定无关，但靠标定的"颜色对不对"发现）**：Coco-LIC 上游把宽 640/1280 的图一律缩成 640×512，
+D435i 的 1280×720 被非等比压扁而内参仍按 1280×720 用，去畸变图 64 % 全黑、点云 63 % 纯黑。
+跑通、轨迹也像样，只有地图颜色不对——**下游验证要看到彩色地图为止**，轨迹数字对不代表相机那一路真的接上了。
+连同其它四个 360° 雷达上的上游缺陷一起修在移植仓库里。
+
 ## 阶段 1 — RGB 相机内参 ✅
 
 `data/cam_rgb-camchain.yaml`(Kalibr 格式,可直接被 VINS / ORB-SLAM 等消费)

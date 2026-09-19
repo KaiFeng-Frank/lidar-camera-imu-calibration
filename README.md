@@ -171,6 +171,22 @@ same recording (1×, 3×, and 1× with rviz + recording running) reproduced the 
 Evidence and every consumed field: [`results/fastlivo2_downstream_validation.json`](results/fastlivo2_downstream_validation.json).
 This is a functional check on the recorded rig and mount session, not an independent accuracy tier.
 
+## Downstream check 2: Coco-LIC on the same recording
+
+![Coco-LIC mapping with this repo's calibration, same recording as FAST-LIVO2, replayed offline](results/cocolic_mapping_mid360s_d435i.gif)
+
+The same calibration was then consumed by a second, structurally different estimator:
+[Coco-LIC](https://github.com/APRIL-ZJU/Coco-LIC) (continuous-time B-spline LiDAR-inertial-camera odometry, run through
+its [ROS 2 Jazzy port](https://github.com/KaiFeng-Frank/Coco-LIC-ROS2-Jazzy)) on the identical 105 s recording
+(`sha256 22c204e5…`, converted to rosbag2). Coco-LIC parameterises camera→IMU directly, so `T_camera_lidar · T_lidar_imu`
+was composed from the two published matrices; `img_time_offset` and the 1280×720 intrinsics are the same numbers FAST-LIVO2 used.
+Both estimators close the loop 1.45–1.46 m from the start. Associating their poses in time (1370 of 1376, ≤ 20 ms) and
+aligning only yaw + translation (the two world frames differ), the positions agree to an RMSE of 0.15 m (median 0.09 m);
+the largest gap, 0.76 m, sits in one 10 s stretch next to a window. LiDAR-inertial-only Coco-LIC lands at 0.135 m RMSE.
+There is no ground truth, so these are cross-consistency numbers, not accuracy. Re-projecting the camera images onto
+Coco-LIC's own map with the composed extrinsic colours 95 % of its 2.25 M points without visible smearing across geometry.
+Evidence: [`results/cocolic_downstream_validation.json`](results/cocolic_downstream_validation.json).
+
 ## Engineering notes
 
 Fifteen+ field-tested implementation notes are preserved in

@@ -155,6 +155,19 @@ MID-360S IMU 结果还固结 gyro bias
 证据与每个被消费的字段见 [`results/fastlivo2_downstream_validation.json`](results/fastlivo2_downstream_validation.json)。
 这是同一 rig / 同一安装会话上的功能性验证，不构成独立的精度层级。
 
+## 下游验证 2：同一份录制跑 Coco-LIC
+
+![用本仓库标定结果跑 Coco-LIC，与 FAST-LIVO2 同一份录制，离线回放](results/cocolic_mapping_mid360s_d435i.gif)
+
+同一套标定接着喂给了结构完全不同的第二个估计器：[Coco-LIC](https://github.com/APRIL-ZJU/Coco-LIC)
+（连续时间 B 样条的雷达-惯性-相机里程计，经其 [ROS 2 Jazzy 移植](https://github.com/KaiFeng-Frank/Coco-LIC-ROS2-Jazzy) 运行），
+输入是与 FAST-LIVO2 完全相同的 105 s 录制（`sha256 22c204e5…`，转成 rosbag2）。Coco-LIC 直接参数化相机→IMU，
+所以用发布的两个矩阵复合出 `T_camera_lidar · T_lidar_imu`；`img_time_offset` 和 1280×720 内参与 FAST-LIVO2 用的是同一组数。
+两个估计器的回环终点都落在离起点 1.45–1.46 m。把两条轨迹按时间关联（1376 对里关联上 1370，≤ 20 ms）、只对齐 yaw 和平移
+（两者世界系不同）后，位置差 RMSE 0.15 m（中位 0.09 m）；最大 0.76 m 集中在靠窗的一段 10 s 里。只用雷达+IMU 的 Coco-LIC 为 0.135 m。
+没有真值，这些是**互证一致性**数字，不是精度。用复合外参把相机图像重投影回 Coco-LIC 自己的地图，225 万点里 95 % 被上色且没有跨几何边界的颜色拖影。
+证据见 [`results/cocolic_downstream_validation.json`](results/cocolic_downstream_validation.json)。
+
 ## 工程实践
 
 15+ 条实测工程记录收录于 [CALIBRATION.md](CALIBRATION.md)，

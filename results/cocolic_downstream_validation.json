@@ -1,0 +1,155 @@
+{
+  "schema": "d435i_calib/downstream_cocolic_validation/v1",
+  "status": "passed",
+  "created_utc": "2026-09-19T14:26:42Z",
+  "rig_id": "mid360s-d435i-01",
+  "mount_session_id": "a56af70a-da0b-49d2-bc84-540c37cb3b05",
+  "devices": [
+    {
+      "model": "Livox MID-360S",
+      "role": "lidar",
+      "serial": "ARMDN6B0030122"
+    },
+    {
+      "model": "Intel RealSense D435i",
+      "role": "rgbd",
+      "serial": "947122070908"
+    }
+  ],
+  "acceptance_tier": "LOCAL cross-algorithm consistency check on the same recording as the FAST-LIVO2 check; no ground truth, not an independent accuracy tier.",
+  "source_data": {
+    "path": "mid360s_d435i_20260919_050305.bag (same file as fastlivo2_downstream_validation.json)",
+    "sha256": "22c204e5d990e21af107b1e379800d9673d92c2146e76da0b4193b8fd0f39c0e",
+    "conversion": "ROS 1 bag -> rosbag2/mcap; /livox/lidar CustomMsg -> sensor_msgs/PointCloud2 (x y z intensity tag line offset_time), images and IMU byte-identical, timestamps unchanged"
+  },
+  "implementation": {
+    "slam": "Coco-LIC (APRIL-ZJU/Coco-LIC, continuous-time non-uniform B-spline LiDAR-inertial-camera odometry) via KaiFeng-Frank/Coco-LIC-ROS2-Jazzy",
+    "mode": "LICO (lidar + IMU + camera); LIO-only run reported for reference",
+    "config_profile": "config/ct_odometry_mid360s_d435i_pc2.yaml + config/mid360s_d435i/{lidar,imu,camera}.yaml in the port repository",
+    "local_changes": [
+      "five upstream (APRIL-ZJU) defects fixed before the 360-degree MID-360S data would run: forward-FOV point filter (x>0.7) -> radial; empty no-lidar window crash; spline index lookup without fallback; unclamped spline segment; images 640/1280 px wide hard-resized to 640x512",
+      "none of the five touches calibration inputs; the image-resize fix matters here because it is what makes the 1280x720 intrinsics apply to the image actually used"
+    ]
+  },
+  "consumed_calibration": {
+    "CameraExtrinsics (camera -> imu)": {
+      "from": "results/mid360s_d435i_extrinsic.local.json:result.T_camera_lidar composed with results/mid360s_lidar_imu.json:result.T_lidar_imu",
+      "derivation": "Coco-LIC parameterises camera->IMU directly: T_camera_imu = T_camera_lidar * T_lidar_imu",
+      "Trans_m": [
+        0.041917699,
+        -0.034074277,
+        -0.031655779
+      ]
+    },
+    "lidar0/Extrinsics (lidar -> imu)": {
+      "from": "results/mid360s_lidar_imu.json:result.T_lidar_imu",
+      "Trans_m": [
+        0.011,
+        0.02329,
+        -0.04412
+      ],
+      "Rot": "identity"
+    },
+    "img_time_offset_s": {
+      "from": "results/mid360s_d435i_timesync.json:result.time_offset_lidar_to_d435_depth_ms",
+      "value": 0.005989416,
+      "note": "same sign convention and value as FAST-LIVO2 (t_image = stamp + offset)"
+    },
+    "camera": {
+      "from": "results/factory_params.json:rgb_1280x720",
+      "fx": 914.19611,
+      "fy": 912.50842,
+      "cx": 652.02185,
+      "cy": 378.63623,
+      "distortion": "zeros (factory-rectified)",
+      "image_size": [
+        1280,
+        720
+      ]
+    }
+  },
+  "run": {
+    "date": "2026-09-19",
+    "mode": "offline replay of the recording",
+    "duration_s": 103.8,
+    "trajectory_rate_hz": 100,
+    "trajectory_length_m": 22.98,
+    "end_to_start_m": 1.448,
+    "max_dist_from_start_m": 2.45,
+    "max_step_mm": 15,
+    "global_map_points": 2253659,
+    "global_map_points_colored_by_camera_pct": 95.4,
+    "camera_fov_colored_points": 1820678
+  },
+  "cross_algorithm_consistency_vs_fastlivo2": {
+    "baseline": "FAST-LIVO2 trajectory from the 1x replay (fastlivo2_downstream_validation.json), 1376 poses at 10 Hz",
+    "method": "nearest-timestamp association (<= 20 ms), then a yaw + xyz-translation alignment (no scale) because the two estimators use different world frames; statistics are on the remaining per-pose position difference",
+    "matched_poses": "1370 / 1376",
+    "LICO_1280x720_images": {
+      "run_a": {
+        "rmse_m": 0.154,
+        "mean_m": 0.117,
+        "median_m": 0.091,
+        "max_m": 0.763
+      },
+      "run_b": {
+        "rmse_m": 0.179,
+        "mean_m": 0.13,
+        "median_m": 0.098,
+        "max_m": 0.897
+      },
+      "note": "same config run twice; Coco-LIC is multi-threaded and not bit-reproducible, differences below ~0.03 m are run-to-run noise"
+    },
+    "LIO_only": {
+      "rmse_m": 0.135,
+      "mean_m": 0.102,
+      "median_m": 0.069,
+      "max_m": 0.648
+    },
+    "per_10s_rmse_m_LICO_run_a": [
+      0.057,
+      0.056,
+      0.08,
+      0.107,
+      0.167,
+      0.141,
+      0.128,
+      0.374,
+      0.098,
+      0.101
+    ],
+    "where_the_max_is": "70-80 s in every run, the stretch next to the window; which estimator is off there cannot be decided without ground truth",
+    "path_length_m": {
+      "fastlivo2": 26.97,
+      "cocolic": 22.98,
+      "note": "15 % shorter: FAST-LIVO2 discrete poses jitter (max step 123 mm), the continuous-time spline does not (15 mm)"
+    }
+  },
+  "verdict": {
+    "passed": true,
+    "criteria": [
+      "runs to completion on the full recording with the calibration used verbatim (composed camera->IMU)",
+      "loop closure within 0.02 m of FAST-LIVO2's (1.45 vs 1.46 m from start)",
+      "per-pose agreement with FAST-LIVO2 at the 0.1 m level over ~90 % of the run",
+      "camera images re-projected onto Coco-LIC's own map with the composed extrinsic colour 95 % of the points without visible smearing across geometry"
+    ],
+    "not_claimed": [
+      "absolute accuracy (no ground truth)",
+      "which estimator is right in the 70-80 s window"
+    ]
+  },
+  "render": {
+    "gif": "results/cocolic_mapping_mid360s_d435i.gif",
+    "size": [
+      960,
+      540
+    ],
+    "bytes": 3842712,
+    "frames": 36,
+    "view": {
+      "azimuth_deg": -125,
+      "elevation_deg": 46
+    },
+    "tool": "headless numpy/PIL from /points_for_gs + /pose_for_gs of Coco-LIC's mapper-contract bag (camera-FOV points coloured by Coco-LIC), camera inset from the source bag; same camera as the FAST-LIVO2 GIF"
+  }
+}
