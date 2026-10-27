@@ -116,7 +116,7 @@ it under `share/rgbd_fullcalib/hardware`.
 | RGB intrinsics | fx/fy 884.8/883.9, reproj σ 0.56 px | principal point vs factory: 0.13 px | ✅ freeze |
 | Stereo IR + baseline | baseline 50.148 mm | vs factory 50.228 mm (0.16%); two independent calibrations differ by 0.005 mm | ✅ freeze |
 | Depth noise model | σ² = (a·z²)² + flatness², σ = 4.1/16.3/65 mm @ 1/2/4 m | two rounds, target flatness cross-checked | ✅ use as weights |
-| Camera–IMU | timeshift 4.0494 ms; rotation ~1° class | solved gravity 9.8070; RGB/IR timeshift agree to 21 µs | ✅ freeze rotation + timeshift |
+| Camera–IMU | timeshift 4.0494 ms; rotation ~1° class; translation `[−5.8,+4.2,+16.2]` mm ±5 mm (joint `scale-misalignment` estimate) | solved gravity 9.8070; RGB/IR timeshift agree to 21 µs; translation x/y match factory, accel non-orthogonality 2.6–2.9° matches six-face 2.83° | ✅ freeze rotation, timeshift and translation |
 | RGB↔IR extrinsics | \|t\| diff vs factory 0.023 mm, rot 0.287° | factory calibration | ✅ freeze |
 | Accelerometer intrinsics | largest non-orthogonality 2.83°; static ‖a‖ residual 3.76 mm/s² over 12 poses | local gravity from latitude/altitude | ✅ use |
 | Thermal drift model | depth scale −372 ppm/°C, focal +203 ppm/°C, gyro bias 0.0046 °/s/°C | R² per channel; principal-point drift falsified (R²=0.07) | ✅ compensate depth scale |

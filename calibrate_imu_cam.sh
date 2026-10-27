@@ -6,11 +6,12 @@
 # 运动模糊的帧带偏。
 set -e
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BAG="${1:?用法: ./calibrate_imu_cam.sh <bag> [camchain] [imu.yaml]}"
+BAG="${1:?用法: ./calibrate_imu_cam.sh <bag> [camchain] [imu.yaml] [from] [to] [imu-model]}"
 CAM="${2:-$D/data/cam_rgb-camchain.yaml}"
 IMU="${3:-$D/results/allan_imu.yaml}"
 FROM="${4:-}"          # 可选:裁掉首尾,避开 B-spline 端点越界
 TO="${5:-}"
+IMU_MODEL="${6:-calibrated}"   # calibrated | scale-misalignment | scale-misalignment-size-effect
 
 BASE=$(basename "$BAG" .bag); DIR=$(dirname "$BAG")
 rm -f "$DIR/$BASE-camchain-imucam.yaml" "$DIR/$BASE-imu.yaml" \
@@ -28,6 +29,7 @@ echo
   --imu "/data/${IMU#$D/}" \
   --target /data/aprilgrid_6x6_35.2mm.yaml \
   ${FROM:+--bag-from-to $FROM $TO} \
+  --imu-models "$IMU_MODEL" \
   --dont-show-report 2>&1 | sed 's/\x1b\[[0-9;]*m//g' \
   | grep -vE "Subpix refinement|partially in image|^\s*$|rospack|dbind-WARNING|secure directory"
 
