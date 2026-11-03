@@ -219,13 +219,13 @@
   {
     "id": "t_ci_spread",
     "stage": "camimu",
-    "name": "平移三次独立解散布 / 量本身",
-    "unit": "%",
-    "value": 25.62239611911413,
-    "reference": 15.0,
-    "ref_label": "可信阈值",
-    "status": "bad",
-    "verdict": "散布与量同级 —— 杠杆臂太短,不要冻结,交 VIO 在线估计(用均值作初值)"
+    "name": "平移跨录制最大轴差(IMU 内参联合估计,干净窗口)",
+    "unit": "mm",
+    "value": 4.619483530558429,
+    "reference": 5.0,
+    "ref_label": "跨录制一致性",
+    "status": "ok",
+    "verdict": "平移可冻结 —— 原散布 1 cm 归因加速度计 2.8° 非正交未入模型,scale-misalignment 联合估计后 x/y 与出厂值一致"
   },
   {
     "id": "trio_chain_t",
